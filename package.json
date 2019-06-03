@@ -1,0 +1,21 @@
+{
+    "name": "auto-version-webpack-plugin",
+    "version": "1.0.0",
+    "description": "Automatically generate versions when building",
+    "keywords": [
+        "version",
+        "manage",
+        "auto",
+        "update"
+    ],
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/hiblacker/auto-version-webpack-plugin.git"
+    },
+    "author": "Blacker",
+    "license": "MIT"
+}
