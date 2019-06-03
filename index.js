@@ -32,7 +32,7 @@ function VersionPlugin(options) {
 VersionPlugin.prototype.apply = function(compiler) {
     var that = this
 
-    compiler.plugin('compile', function() {
+    compiler.plugin('compile', function(compilation,callback) {
         var package_path = compiler.context + '/package.json'
         var package_json
         if (FStream.existsSync(package_path)) {
@@ -67,6 +67,7 @@ VersionPlugin.prototype.apply = function(compiler) {
             if (err) throw err
             writeVersion(version_file, content)
         })
+        callback()
     })
 }
 
