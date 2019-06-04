@@ -29,10 +29,10 @@ function VersionPlugin(options) {
  * 4. 打包时如果传入版本号，则优先使用传入的版本号
  *
  */
-VersionPlugin.prototype.apply = function(compiler) {
+VersionPlugin.prototype.apply = function (compiler) {
     var that = this
 
-    compiler.plugin('compile', function(compilation,callback) {
+    compiler.plugin('compile', function (compilation, callback) {
         var package_path = compiler.context + '/package.json'
         var package_json
         if (FStream.existsSync(package_path)) {
@@ -55,15 +55,13 @@ VersionPlugin.prototype.apply = function(compiler) {
         // 2. 写入 version.json
         var build_path = compiler.context + '/' + that.options.versionDirectory
         var version_file = build_path + '/version.json'
-        var public_version = that.options.addTimestamp
-            ? `${newVersion}.${+new Date()}`
-            : newVersion
+        var public_version = that.options.addTimestamp ? `${newVersion}.${+new Date()}` : newVersion
         var content = `{"version":"${public_version}"}`
         if (FStream.existsSync(build_path)) {
             writeVersion(version_file, content)
             return
         }
-        FStream.mkdir(build_path, function(err) {
+        FStream.mkdir(build_path, function (err) {
             if (err) throw err
             writeVersion(version_file, content)
         })
@@ -72,7 +70,7 @@ VersionPlugin.prototype.apply = function(compiler) {
 }
 
 const writeVersion = (versionFile, content) => {
-    FStream.writeFile(versionFile, content, function(err) {
+    FStream.writeFile(versionFile, content, function (err) {
         if (err) throw err
     })
 }
