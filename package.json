@@ -1,6 +1,6 @@
 {
     "name": "auto-version-webpack-plugin",
-    "version": "1.0.5",
+    "version": "2.0.0",
     "description": "Automatically generate versions when building",
     "keywords": [
         "version",
