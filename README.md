@@ -1,13 +1,13 @@
-# auto-version-webpack-plugin
+# auto-version-webpack-plugin V2.0.0
 
-Automatically generate versions when building。构建时自动生成版本号。
+Automatically generate versions when building。构建时自动更新版本号，生成打包版本信息文件。
 
 ## Installation
 
 Using npm:
 
 ```
-npm i --save-dev auto-version-webpack-plugin
+npm install  --save-dev auto-version-webpack-plugin
 ```
 
 Or yarn:
@@ -17,6 +17,7 @@ yarn add -D auto-version-webpack-plugin
 ```
 
 ## Usage
+`new autoVersionWebpackPlugin([patterns], options)`
 
 生成版本号规则：
 
