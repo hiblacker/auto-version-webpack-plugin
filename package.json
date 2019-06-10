@@ -1,12 +1,15 @@
 {
     "name": "auto-version-webpack-plugin",
-    "version": "1.0.4",
+    "version": "2.0.0",
     "description": "Automatically generate versions when building",
     "keywords": [
         "version",
         "manage",
         "auto",
-        "update"
+        "update",
+        "semver",
+        "webpack",
+        "plugin"
     ],
     "main": "src/index.js",
     "scripts": {
@@ -17,5 +20,8 @@
         "url": "https://github.com/hiblacker/auto-version-webpack-plugin.git"
     },
     "author": "Blacker",
-    "license": "MIT"
+    "license": "MIT",
+    "devDependencies": {
+        "minimist": "^1.2.0"
+    }
 }

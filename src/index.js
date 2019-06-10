@@ -1,6 +1,7 @@
 'use strict'
 
-var FStream = require('fs')
+const FStream = require('fs')
+const argv = require('minimist')(process.argv.slice(2));
 
 /**
  * 自动更新版本号插件
@@ -8,14 +9,17 @@ var FStream = require('fs')
  * @param options
  */
 function VersionPlugin(options) {
-    if (options.whereToPlus > 2) throw new Error('whereToPlus error: expected 0,1,2')
-    var defaultOptions = {
-        // 语义化版本号
-        semver:'patch',
-        // 注入路径
-        versionDirectory: '/',
+    let defaultOptions = {
+        // 语义化版本号,传入false时，不更新版本
+        semver: 'patch',
+        // 是否在打包文件中注入版本信息文件
+        inject: true,
+        // 注入路径,'/'表示打包跟目录
+        injectFileDirectory: '/',
         // 文件名字
-        fileName:'version.json',
+        injectFileName: 'version.json',
+        // 注入的版本号加入时间戳
+        injectVersionTimestamp: true,
         packageIndent: 2,
         custome: null
     }
@@ -43,54 +47,112 @@ function VersionPlugin(options) {
  *
  */
 VersionPlugin.prototype.apply = function (compiler) {
-    var that = this
-
-    compiler.plugin('compile', function (compilation, callback) {
-        var package_path = compiler.context + '/package.json'
-        var package_json
+    let that = this
+    compiler.hooks.done.tap('auto version plugin', function () {
+        // 跳过开发环境
+        if (compiler.options.mode === 'development') return
+        // 获取项目 package.json
+        let package_path = compiler.context + '/package.json'
+        let package_json
         if (FStream.existsSync(package_path)) {
             package_json = require(package_path)
         } else {
             throw new Error('package.json 文件不存在')
         }
 
-        // 1. 修改 package.json 中的 version
-        var package_version = package_json.version
-        var package_version_arr = package_version.split('.')
-        package_version_arr[that.options.whereToPlus] = +package_version_arr[that.options.whereToPlus] + 1
-        if (that.options.whereToPlus === 1) package_version_arr[2] = 0
-        var newVersion = that.options.version || package_version_arr.join('.')
-        package_json.version = newVersion
-        FStream.writeFileSync(
-            'package.json',
-            JSON.stringify(package_json, null, that.options.packageIndent)
-        )
+        // 获取升级方式
+        let position = getSemverPosition(that.options)
+        let newPackageJson = position !== false ? getNewPackageJson(package_json, position) : false
 
-        // 2. 写入 version.json
-        var build_path = compiler.context + '/' + that.options.versionDirectory
-        var version_file = build_path + that.options.fileName
-        var public_version = that.options.addTimestamp ? `${newVersion}.${+new Date()}` : newVersion
-        var version_json = {
-            version: public_version
+        // 写入package.json
+        if (newPackageJson) {
+            let path = compiler.context
+            let jsonString = JSON.stringify(newPackageJson, null, that.options.packageIndent)
+            writeFile(path, '/package.json', jsonString)
         }
-        if (that.options.custome) Object.assign(version_json, that.options.custome)
-        var content = JSON.stringify(version_json)
-        if (FStream.existsSync(build_path)) {
-            writeVersion(version_file, content)
-            return
+
+        // 注入版本信息文件
+        if (that.options.inject) {
+            let version = newPackageJson.version || package_json.version
+            let public_version = that.options.injectVersionTimestamp ? `${version}.${+new Date()}` : version
+            let version_json = {
+                version: public_version
+            }
+            if (that.options.custome) Object.assign(version_json, that.options.custome)
+            let content = JSON.stringify(version_json)
+            let build_path = compiler.options.output.path + that.options.injectFileDirectory
+            writeFile(build_path,that.options.injectFileName,content)
         }
-        FStream.mkdir(build_path, function (err) {
-            if (err) throw err
-            writeVersion(version_file, content)
-        })
-        callback()
     })
 }
 
-const writeVersion = (versionFile, content) => {
-    FStream.writeFile(versionFile, content, function (err) {
+const writeFile = (path, fileName, content) => {
+    if (FStream.existsSync(path)) {
+        write(path + fileName, content)
+        return
+    }
+    FStream.mkdir(path, function (err) {
         if (err) throw err
+        write(path + fileName, content)
     })
+
+    function write(file, content) {
+        FStream.writeFileSync(file, content, function (err) {
+            if (err) throw err
+        })
+    }
 }
+
+
+/**
+ * 获取更新后的 json
+ *
+ * @param    {json}     package_json    package.json: {"version":"1.1.1"}
+ * @param    {number}   position        0，1，2
+ *
+ * @return   {json}     {"version":"1.2.0"}
+ *
+ */
+const getNewPackageJson = (package_json, position) => {
+    let oldJson = package_json
+    let oldVersionArr = oldJson.version.split('.')
+    oldVersionArr = oldVersionArr.map((i, k) => {
+        if (k > position) {
+            return 0
+        }
+        if (k === position) {
+            return ++i
+        }
+        return i
+    })
+    oldJson.version = oldVersionArr.join('.')
+    return oldJson
+}
+
+/**
+ * 获取更新方式
+ *
+ * @return   {string}  'patch' 'minor' 'major'
+ */
+const getSemverPosition = (options) => {
+    let value
+    // 命令行
+    const semver = {
+        patch: 2,
+        minor: 1,
+        major: 0
+    }
+    Object.keys(semver).map(i => argv[i] ? value = semver[i] : '')
+    // 没有获取到命令行参数
+    if (value !== 0 && !value) {
+        // 配置了不升级
+        if (!options.semver) {
+            return false
+        }
+        value = semver[options.semver]
+    }
+    return value
+}
+
 
 module.exports = VersionPlugin
